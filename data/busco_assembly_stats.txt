@@ -1,0 +1,162 @@
+#NAND reference
+# BUSCO version is: 6.0.0 
+# The lineage dataset is: eukaryota_odb12 (Creation date: 2026-05-22, number of genomes: 456, number of BUSCOs: 129)
+# Summarized benchmarking in BUSCO notation for file /storage/project/r-alind6-0/shared/zoo_atlanta/assemblies/CW/clonal/nanopore/CW_clone_1_xenic/busco/Nand_NCBI_lindlab.fasta
+# BUSCO was run in mode: euk_genome_min
+# Gene predictor used: miniprot
+
+	***** Results: *****
+
+	C:65.9%[S:58.1%,D:7.8%],F:9.3%,M:24.8%,n:129,E:25.9%	   
+	85	Complete BUSCOs (C)	(of which 22 contain internal stop codons)		   
+	75	Complete and single-copy BUSCOs (S)	   
+	10	Complete and duplicated BUSCOs (D)	   
+	12	Fragmented BUSCOs (F)			   
+	32	Missing BUSCOs (M)			   
+	129	Total BUSCO groups searched		   
+
+Assembly Statistics:
+	54	Number of scaffolds
+	54	Number of contigs
+	15972174	Total length
+	0.000%	Percent gaps
+	939 kbp	Scaffold N50
+	939 kbp	Contigs N50
+
+
+Dependencies and versions:
+	hmmsearch: 3.4
+	bbtools: None
+	miniprot_index: 0.18-r281
+	miniprot_align: 0.18-r281
+
+
+#CW clonal assembly from illumina
+# BUSCO version is: 6.0.0 
+# The lineage dataset is: eukaryota_odb12 (Creation date: 2026-05-22, number of genomes: 456, number of BUSCOs: 129)
+# Summarized benchmarking in BUSCO notation for file /storage/project/r-alind6-0/shared/zoo_atlanta/assemblies/CW/clonal/nanopore/CW_clone_1_xenic/busco/CW_clonal_illumina_assembly.fasta
+# BUSCO was run in mode: euk_genome_min
+# Gene predictor used: miniprot
+
+	***** Results: *****
+
+	C:65.1%[S:60.5%,D:4.7%],F:10.1%,M:24.8%,n:129,E:20.2%	   
+	84	Complete BUSCOs (C)	(of which 17 contain internal stop codons)		   
+	78	Complete and single-copy BUSCOs (S)	   
+	6	Complete and duplicated BUSCOs (D)	   
+	13	Fragmented BUSCOs (F)			   
+	32	Missing BUSCOs (M)			   
+	129	Total BUSCO groups searched		   
+
+Assembly Statistics:
+	6056	Number of scaffolds
+	6098	Number of contigs
+	15434088	Total length
+	0.027%	Percent gaps
+	38 kbp	Scaffold N50
+	37 kbp	Contigs N50
+
+
+Dependencies and versions:
+	hmmsearch: 3.4
+	bbtools: None
+	miniprot_index: 0.18-r281
+	miniprot_align: 0.18-r281
+
+#CW pacbio mixture assembly
+# BUSCO version is: 6.0.0 
+# The lineage dataset is: eukaryota_odb12 (Creation date: 2026-05-22, number of genomes: 456, number of BUSCOs: 129)
+# Summarized benchmarking in BUSCO notation for file /storage/project/r-alind6-0/shared/zoo_atlanta/assemblies/CW/clonal/nanopore/CW_clone_1_xenic/busco/CW_mixture_pacbio_blasto_contigs.fasta
+# BUSCO was run in mode: euk_genome_min
+# Gene predictor used: miniprot
+
+	***** Results: *****
+
+	C:64.3%[S:45.0%,D:19.4%],F:10.1%,M:25.6%,n:129,E:18.1%	   
+	83	Complete BUSCOs (C)	(of which 15 contain internal stop codons)		   
+	58	Complete and single-copy BUSCOs (S)	   
+	25	Complete and duplicated BUSCOs (D)	   
+	13	Fragmented BUSCOs (F)			   
+	33	Missing BUSCOs (M)			   
+	129	Total BUSCO groups searched		   
+
+Assembly Statistics:
+	131	Number of scaffolds
+	131	Number of contigs
+	21864136	Total length
+	0.000%	Percent gaps
+	764 kbp	Scaffold N50
+	764 kbp	Contigs N50
+
+
+Dependencies and versions:
+	hmmsearch: 3.4
+	bbtools: None
+	miniprot_index: 0.18-r281
+	miniprot_align: 0.18-r281
+
+
+#Columbia paper clonal SRR20078973 assembly
+# BUSCO version is: 6.0.0 
+# The lineage dataset is: eukaryota_odb12 (Creation date: 2026-05-22, number of genomes: 456, number of BUSCOs: 129)
+# Summarized benchmarking in BUSCO notation for file /storage/project/r-alind6-0/shared/zoo_atlanta/assemblies/CW/clonal/nanopore/CW_clone_1_xenic/busco/GCA_027406485.1_ASM2740648v1_SRR20078973_clonal.fasta
+# BUSCO was run in mode: euk_genome_min
+# Gene predictor used: miniprot
+
+	***** Results: *****
+
+	C:57.4%[S:56.6%,D:0.8%],F:15.5%,M:27.1%,n:129,E:24.3%	   
+	74	Complete BUSCOs (C)	(of which 18 contain internal stop codons)		   
+	73	Complete and single-copy BUSCOs (S)	   
+	1	Complete and duplicated BUSCOs (D)	   
+	20	Fragmented BUSCOs (F)			   
+	35	Missing BUSCOs (M)			   
+	129	Total BUSCO groups searched		   
+
+Assembly Statistics:
+	2077	Number of scaffolds
+	2789	Number of contigs
+	12557902	Total length
+	0.563%	Percent gaps
+	10 kbp	Scaffold N50
+	6 kbp	Contigs N50
+
+
+Dependencies and versions:
+	hmmsearch: 3.4
+	bbtools: None
+	miniprot_index: 0.18-r281
+	miniprot_align: 0.18-r281
+
+#Columbia paper mixture SRR20078971 assembly
+# BUSCO version is: 6.0.0 
+# The lineage dataset is: eukaryota_odb12 (Creation date: 2026-05-22, number of genomes: 456, number of BUSCOs: 129)
+# Summarized benchmarking in BUSCO notation for file /storage/project/r-alind6-0/shared/zoo_atlanta/assemblies/CW/clonal/nanopore/CW_clone_1_xenic/busco/GCA_027406405.1_ASM2740640v1_SRR20078971_possible_mixture.fasta
+# BUSCO was run in mode: euk_genome_min
+# Gene predictor used: miniprot
+
+	***** Results: *****
+
+	C:68.2%[S:51.9%,D:16.3%],F:8.5%,M:23.3%,n:129,E:27.3%	   
+	88	Complete BUSCOs (C)	(of which 24 contain internal stop codons)		   
+	67	Complete and single-copy BUSCOs (S)	   
+	21	Complete and duplicated BUSCOs (D)	   
+	11	Fragmented BUSCOs (F)			   
+	30	Missing BUSCOs (M)			   
+	129	Total BUSCO groups searched		   
+
+Assembly Statistics:
+	116	Number of scaffolds
+	116	Number of contigs
+	20102801	Total length
+	0.000%	Percent gaps
+	248 kbp	Scaffold N50
+	248 kbp	Contigs N50
+
+
+Dependencies and versions:
+	hmmsearch: 3.4
+	bbtools: None
+	miniprot_index: 0.18-r281
+	miniprot_align: 0.18-r281
+

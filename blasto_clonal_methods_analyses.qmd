@@ -1,0 +1,538 @@
+---
+title: Blastocystis clonal methods analyses
+date: today
+author: Johnathan Shih
+date-format: short
+format: 
+  html:
+    code-fold: true
+    code-tools: true
+    code: true
+    page-layout: full
+    toc: true
+    toc-location: "left"
+    smooth-scroll: true
+---
+
+# Overview
+
+A markdown to generate all the computational figures for the Blastocystis clonal methods paper after running the `blasto_clonal_methods.smk`.
+
+## Figures 
+Main text:
+
+  - Allele Frequency Histogram of the CW Clonal strain and SRR*973
+  - Allele Frequency Histogram of the CW mixture strains and SRR*971
+
+Supplemental:
+  - BUSCO of the assembly from SRR973 and SRR971
+  - Faceted Allele Frequency Histograms of all Blastocystis ST1 strains that are similar to Nand
+  - ANI heatmap of the assemblies
+  - Metadata file of the Blastocystis ST1 assemblies
+
+
+
+# Figures
+
+<!-- load libraries and data -->
+```{r}
+
+library(jsonlite)
+library(vroom)
+library(cowplot)
+library(knitr)
+library(RColorBrewer)
+library(vcfR)
+library(httpgd)
+library(gt)
+library(tidyverse)
+library(svglite)
+
+lind_palette <- c("#2F4B26", "#B49F55", "#75B1C7", "#A55B7B", "#999999")
+```
+
+
+
+# BUSCO figure
+```{r}
+
+busco_stats <- 
+read_delim("manual_busco_assembly_stats.txt", delim = "\t", col_names = c("assembly", "count", "type")) %>%
+  select(-starts_with("X")) %>%
+  filter(!str_detect(type, "Total")) %>%
+  filter(!str_detect(type, "Complete BUSCOs")) %>%
+  mutate(count = as.numeric(count)) %>%
+  mutate(prop = count / 129) %>%
+  mutate(assembly = fct_relevel(assembly, "Nand", "CW Clonal", "CW Mixture", "SRR20078973 Assembly", "SRR20078971 Assembly")) %>%
+  mutate(type = fct_relevel(type, "Missing BUSCOs (M)", "Fragmented BUSCOs (F)", "Complete and single-copy BUSCOs (S)" ,"Complete and duplicated BUSCOs (D)"))
+
+busco_stats %>%
+  ggplot(aes(fill = type, y = assembly, x = prop)) +
+    geom_col() +
+      scale_fill_manual(values = lind_palette, guide = guide_legend(nrow = 2)) +
+    labs(y = "Assembly", x = "Proportion of total BUSCO groups", fill = "") + 
+    theme_cowplot(20) +
+    theme(legend.position = "bottom") +
+    background_grid()
+
+```
+
+
+
+# Allele Frequency Histogram of CW clonal, mixture and 2 st1 strains.
+<!-- vcf load -->
+```{r}
+
+cw_clonal_vcf <- read.vcfR("/storage/home/hcoda1/1/jshih41/r-alind6-0/projects/blasto_clonal_methods_analyses/final_results/cw_clonal/cw_clonal_output.vcf.gz") %>%
+  vcfR2tidy(single_frame = TRUE) %>%
+  .$dat
+
+cw_mixture_vcf <- read.vcfR("/storage/home/hcoda1/1/jshih41/r-alind6-0/projects/blasto_clonal_methods_analyses/final_results/cw_mixture/cw_mixture_output.vcf.gz") %>%
+  vcfR2tidy(single_frame = TRUE) %>%
+  .$dat
+
+st1_samples_vcf <- read.vcfR("/storage/project/r-alind6-0/jshih41/projects/blasto_clonal_methods_analyses/final_results/st1_samples/updated_filt_merged_vcf.gz") %>%
+  vcfR2tidy(single_frame = TRUE) %>%
+  .$dat
+
+
+```
+
+
+```{r}
+cw_clonal_vcf_df <- cw_clonal_vcf %>% 
+  filter(str_length(REF) == 1, str_length(ALT) == 1, !str_detect(ALT, ","), !ALT %in% c("*", ".")) %>%  # filtering for bialleic snps
+  filter(gt_GT %in% c("0/1", "0|1", "1/1", "1/0", "1|0")) %>%
+  filter(FILTER == "PASS") %>%
+  separate_wider_delim(gt_AD, delim = ",", names = c("ref_ad", "alt_ad")) %>%
+  mutate(alt_ad = as.numeric(alt_ad)) %>% 
+  mutate(ref_ad = as.numeric(ref_ad)) %>% 
+  mutate(af = alt_ad / (alt_ad + ref_ad)) %>%
+  mutate(depth = alt_ad + ref_ad)
+
+cw_mixture_vcf_df <- cw_mixture_vcf%>% 
+  filter(str_length(REF) == 1, str_length(ALT) == 1, !str_detect(ALT, ","), !ALT %in% c("*", ".")) %>%  # filtering for bialleic snps
+  filter(gt_GT %in% c("0/1", "0|1", "1/1", "1/0", "1|0")) %>%
+  filter(FILTER == "PASS") %>%
+  separate_wider_delim(gt_AD, delim = ",", names = c("ref_ad", "alt_ad")) %>%
+  mutate(alt_ad = as.numeric(alt_ad)) %>% 
+  mutate(ref_ad = as.numeric(ref_ad)) %>% 
+  mutate(af = alt_ad / (alt_ad + ref_ad)) %>%
+  mutate(depth = alt_ad + ref_ad)
+
+st1_samples_vcf_df <- st1_samples_vcf %>% 
+  filter(str_length(REF) == 1, str_length(ALT) == 1, !str_detect(ALT, ","), !ALT %in% c("*", ".")) %>%  # filtering for bialleic snps
+  filter(gt_GT %in% c("0/1", "0|1", "1/1", "1/0", "1|0")) %>%
+  filter(gt_GQ > 20, QUAL > 20) %>%
+  filter(FILTER == "PASS") %>%
+  separate_wider_delim(gt_AD, delim = ",", names = c("ref_ad", "alt_ad")) %>%
+  mutate(alt_ad = as.numeric(alt_ad)) %>% 
+  mutate(ref_ad = as.numeric(ref_ad)) %>% 
+  mutate(af = alt_ad / (alt_ad + ref_ad)) %>%
+  mutate(depth = alt_ad + ref_ad)
+
+plot_grid(
+  cw_clonal_vcf_df %>%
+  filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>%
+  mutate(sample = "CW clonal") %>%
+  ggplot(aes(x = af)) + 
+    geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+    geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+    scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+    facet_wrap(~sample) + 
+    labs(x = "Variant Allele Frequency", y = "") + 
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+    theme_cowplot(20) +
+    background_grid(),
+
+  cw_mixture_vcf_df %>%
+  filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>%
+  mutate(sample = "CW mixture") %>%
+  ggplot(aes(x = af)) + 
+    geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+    geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+    scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
+    facet_wrap(~sample) + 
+    labs(x = "Variant Allele Frequency", y = "") + 
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+    theme_cowplot(20) +
+    background_grid(),
+
+  st1_samples_vcf_df %>%
+    filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>%
+    filter(str_detect(Indiv, "973")) %>%
+    ggplot(aes(x = af)) + 
+    geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+    geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+      scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
+      facet_wrap(~Indiv) + 
+      labs(x = "Variant Allele Frequency", y = "") + 
+      geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+      theme_cowplot(20) +
+      background_grid(),
+  st1_samples_vcf_df %>%
+    filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>%
+    filter(str_detect(Indiv, "971")) %>%
+    ggplot(aes(x = af)) + 
+    geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+    geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+      scale_x_continuous(breaks = seq(0, 1, by = 0.1)) + 
+      facet_wrap(~Indiv) + 
+      labs(x = "Variant Allele Frequency", y = "") + 
+      geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+      theme_cowplot(20) +
+      background_grid(),
+
+  nrow = 2,
+  labels = c("A", "B", "C", "D")
+)
+
+
+```
+
+
+# Mapping genome
+
+```{r}
+
+
+
+# Metadata file of the Blastocystis ST1 assemblies
+
+# Merging tables obtained from ncbi/eukdetect2/etc.
+
+# get samples that were >5x coverage
+high_cov_samples <- read_tsv("data/samtools-coverage-table.tsv") %>%
+  select(sample = Sample, mean_cov = `Mean depth`) %>%
+  arrange(desc(mean_cov)) %>%
+  mutate(sample = str_replace(sample, "_alignment_cov", "")) %>%
+  filter(mean_cov > 5)
+
+# read in all bioprojects and samples within
+all_samples_ncbi <- list.files(path = "data/ena_reports", pattern = "filereport_read_run*", full.names = TRUE) %>%
+  map(read_delim, show_col_types = FALSE) %>%
+  bind_rows()
+
+
+eukdetect2_mapping <- read_csv("data/blasto_st1_no_other_blastos_top_100_rpksb.csv") %>%
+  select(label, lifestyle, sample, species, rpksb)
+
+
+assembly_report <- stream_in(file("data/assembly_data_report.jsonl", encoding = "UTF-8"),
+  flatten = TRUE) %>%
+  as_tibble() %>%
+  select(accession, assemblyInfo.assemblyName, assemblyInfo.submitter,assemblyInfo.bioprojectAccession, assemblyInfo.sequencingTech,assemblyInfo.biosample.accession, assemblyInfo.biosample.geoLocName)
+
+genome_source_map <- read_csv("data/genome_source_map.csv")
+
+blasto_map <- high_cov_samples %>%
+  left_join(all_samples_ncbi, by = c("sample" = "run_accession")) %>%
+  select(sample, mean_cov, study_accession, sample_accession, experiment_accession) %>%
+  left_join(eukdetect2_mapping, by = c("sample")) %>%
+  left_join(assembly_report, by = c("sample_accession" = "assemblyInfo.biosample.accession")) %>%
+  left_join(assembly_report %>% mutate(sample_name_merge = str_remove(assemblyInfo.assemblyName, "_.*")), by = c("sample" = "sample_name_merge")) %>%
+  mutate(genome = coalesce(accession.x, accession.y)) %>% 
+  mutate(assemblyName = coalesce(assemblyInfo.assemblyName.x, assemblyInfo.assemblyName.y)) %>%
+  select(-ends_with(".x"), -ends_with(".y")) %>%
+  select(-assemblyInfo.biosample.accession) %>%
+  left_join(
+    genome_source_map %>% 
+      select(accession, submitter, location),
+      by = c("genome" = "accession")
+  ) %>%
+  mutate(genome_file = str_c(genome, "_", assemblyName, "_genomic")) %>% 
+    filter(mean_cov >= 10) %>%
+    mutate(data_type = "") %>%
+    select(sample, mean_cov, data_type, assemblyName, study_accession, sample_accession, genome, location)
+
+```
+
+
+
+# Allele Frequency Histograms of all Blastocystis ST1 strains that are similar to Nand
+
+```{r}
+
+
+
+st1_samples_vcf_df %>%
+  left_join(blasto_map, by = c("Indiv" = "sample")) %>%
+  filter(mean_cov > 10) %>% 
+  filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>%
+  mutate(facet_label = str_c(Indiv, "\n Coverage: ", round(mean_cov,2), "x")) %>%
+  mutate(facet_label = fct_reorder(facet_label, mean_cov)) %>% 
+  ggplot(aes(x = af)) + 
+  geom_histogram(
+    aes(y = after_stat(count)),
+    binwidth = 0.02, boundary = 0,
+    fill = "#999999", color = "black"
+  ) +
+  geom_density(
+    aes(y = after_stat(density * n * 0.02)),
+    color = "black",
+    linewidth = 1
+  ) +
+  labs(x = "Variant Allele Frequency", y = "Count") +
+    facet_wrap(~facet_label, scales = "free_y", nrow = 3, ) + 
+    labs(x = "Variant Allele Frequency", y = "") + 
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+    theme_cowplot(15) +
+    background_grid()
+
+```
+
+
+
+# ANI heatmap of the Blastocystis ST1 assemblies
+
+```{r}
+
+genome_map <- read_csv("/storage/home/hcoda1/1/jshih41/r-alind6-0/projects/blast_analysis/data/genome_source_map.csv")
+
+genomes_keep <- blasto_map %>%
+  mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+  pull(genomic_file)
+
+
+labels <- genome_map %>% 
+  filter(ani_assigned_st == 1) %>%
+  mutate(genome_id = str_replace(genome_id, ".sorted.bam", "")) %>%
+  mutate(genome_id = str_replace(genome_id,"results/bam/","")) %>%
+  mutate(accession = str_replace(accession, "\\.1", "")) %>%
+  mutate(heat_label = str_c(accession, "_", location)) %>%
+  mutate(genome_id = str_replace(genome_id, "_genomic", "")) %>%
+  select(genome_id, heat_label)
+
+fastani_out <- read_tsv("/storage/home/hcoda1/1/jshih41/r-alind6-0/projects/blasto_clonal_methods_analyses/final_results/fastani_all.tsv", col_names = FALSE) %>%
+    set_names(c("genome1", "genome2", "ani", "numerator","denominator")) %>% 
+    mutate(genome1 = str_replace(genome1, "/storage/home/hcoda1/1/jshih41/r-alind6-0/data/all_ncbi_blast_genomes/", "")) %>%
+    mutate(genome2 = str_replace(genome2, "/storage/home/hcoda1/1/jshih41/r-alind6-0/data/all_ncbi_blast_genomes/", "")) %>%
+    mutate(genome1 = str_replace(genome1, "_genomic.fna", "")) %>%
+    mutate(genome2 = str_replace(genome2, "_genomic.fna", ""))
+
+mat <- fastani_out %>%
+  select(genome1, genome2, ani) %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample1 = sample, genomic_file),
+      by = c("genome1" = "genomic_file")
+  ) %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample2 = sample, genomic_file),
+      by = c("genome2" = "genomic_file")
+  ) %>%
+  mutate(sample1 = ifelse(is.na(sample1), genome1, sample1)) %>%
+  mutate(sample2 = ifelse(is.na(sample2), genome2, sample2)) %>%
+  select(-genome1, -genome2) %>%
+  pivot_wider(names_from = sample2, values_from = ani, values_fill = 0) %>%
+  column_to_rownames("sample1") %>%
+  as.matrix()
+
+
+row_dendro <- hclust(dist(mat))
+ordered_names <- rownames(mat)[row_dendro$order]
+
+fastani_out %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample1 = sample, genomic_file),
+      by = c("genome1" = "genomic_file")
+  ) %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample2 = sample, genomic_file),
+      by = c("genome2" = "genomic_file")
+  ) %>%
+  mutate(sample1 = ifelse(is.na(sample1), genome1, sample1)) %>%
+  mutate(sample2 = ifelse(is.na(sample2), genome2, sample2)) %>%
+  ggplot(aes(x = factor(sample1, levels = ordered_names), y = factor(sample2, levels = ordered_names), fill = ani)) + 
+    geom_tile() +
+    scale_fill_distiller(palette = "PRGn", direction = 1) +
+    theme_cowplot(20) +
+    labs(x= "", y = "") + 
+    background_grid() +
+  theme(axis.text.x = element_blank())
+
+```
+
+
+## exporting figures
+
+```{r}
+
+combined_figure3 <-
+plot_grid(
+  busco_stats %>%
+  ggplot(aes(fill = type, y = assembly, x = prop)) +
+    geom_col() +
+      scale_fill_manual(values = lind_palette, guide = guide_legend(nrow = 2)) +
+    labs(y = "Assembly", x = "Proportion of total BUSCO groups", fill = "") + 
+    theme_cowplot(12) +
+    theme(legend.position = "bottom") +
+    background_grid(),
+
+  plot_grid(
+    cw_clonal_vcf_df %>%
+    filter(gt_GT != "1/1") %>%
+    filter(QUAL > 20, gt_GQ > 20) %>% 
+    mutate(sample = "CW clonal") %>%
+    ggplot(aes(x = af)) + 
+      geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+      geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+      scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+      facet_wrap(~sample) + 
+      coord_cartesian(xlim = c(0,1)) +
+      labs(x = "Variant Allele Frequency", y = "") + 
+      geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+      theme_cowplot(12) +
+      background_grid(),
+
+    cw_mixture_vcf_df %>%
+    filter(gt_GT != "1/1") %>%
+    filter(QUAL > 20, gt_GQ > 20) %>% 
+    mutate(sample = "CW mixture") %>%
+    ggplot(aes(x = af)) + 
+      geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+      geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+      scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+      facet_wrap(~sample) + 
+      coord_cartesian(xlim = c(0,1)) +
+      labs(x = "Variant Allele Frequency", y = "") + 
+      geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+      theme_cowplot(12) +
+      background_grid(),
+
+    st1_samples_vcf_df %>%
+      filter(gt_GT != "1/1") %>%
+      filter(QUAL > 20, gt_GQ > 20) %>% 
+      filter(str_detect(Indiv, "973")) %>%
+      # filter(depth > lower_quant, depth < upper_quant) %>%
+      ggplot(aes(x = af)) + 
+        geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+        geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+        scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+        facet_wrap(~Indiv) + 
+        coord_cartesian(xlim = c(0,1)) +
+        labs(x = "Variant Allele Frequency", y = "") + 
+        geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+        theme_cowplot(12) +
+        background_grid(),
+    st1_samples_vcf_df %>%
+      filter(gt_GT != "1/1") %>%
+      filter(QUAL > 20, gt_GQ > 20) %>% 
+      filter(str_detect(Indiv, "971")) %>%
+      # filter(depth > lower_quant, depth < upper_quant) %>%
+      ggplot(aes(x = af)) + 
+        geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+        geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+        scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+        facet_wrap(~Indiv) + 
+        coord_cartesian(xlim = c(0,1)) +
+        labs(x = "Variant Allele Frequency", y = "") + 
+        geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+        theme_cowplot(12) +
+        background_grid(),
+
+    nrow = 2,
+    labels = c("B", "", "C", "")
+  ),
+  labels = c("A", ""),
+  nrow = 2
+)
+
+combined_figure3_with_margins <- ggdraw(combined_figure3) + 
+  theme(
+    plot.margin = margin(t = 1, r = 1, b = 1, l = 1, unit = "in")
+  )
+
+save_plot(
+  filename = "figure3.pdf", 
+  plot = combined_figure3_with_margins,
+  base_width = 8.5,
+  base_height = 11
+)
+```
+
+```{r}
+
+sup_fig2 <- st1_samples_vcf_df %>%
+  left_join(blasto_map, by = c("Indiv" = "sample")) %>%
+  filter(mean_cov > 10) %>% 
+  filter(gt_GT != "1/1") %>%
+  filter(QUAL > 20, gt_GQ > 20) %>% 
+  mutate(facet_label = str_c(Indiv, "\n Coverage: ", round(mean_cov,2), "x")) %>%
+  mutate(facet_label = fct_reorder(facet_label, mean_cov)) %>% 
+  ggplot(aes(x = af)) + 
+      geom_histogram(aes(y = after_stat(count)),binwidth = 0.02, boundary = 0,fill = "#999999", color = "black") +
+      geom_density(aes(y = after_stat(density * n * 0.02)), color = "black", linewidth = 1) +
+    scale_x_continuous(breaks = seq(0, 1, by = 0.2)) + 
+    facet_wrap(~facet_label, scales = "free_y", nrow = 3) + 
+    labs(x = "Variant Allele Frequency", y = "") + 
+    geom_vline(xintercept = 0.5, linetype = "dashed", color = "#2F4B26") + 
+    theme_cowplot(12) +
+    background_grid()
+
+sup_fig2_margins <- ggdraw(sup_fig2) + 
+  theme(
+    plot.margin = margin(t = 1, r = 1, b = 4, l = 1, unit = "in")
+  )
+
+save_plot(
+  filename = "sup_fig2.pdf", 
+  plot = sup_fig2_margins,
+  base_width = 8.5,
+  base_height = 11
+)
+
+```
+
+
+```{r}
+
+sup_fig3 <- 
+fastani_out %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample1 = sample, genomic_file),
+      by = c("genome1" = "genomic_file")
+  ) %>%
+  left_join(
+    blasto_map %>%
+      mutate(genomic_file = str_c(genome,"_" ,assemblyName)) %>%
+      select(sample2 = sample, genomic_file),
+      by = c("genome2" = "genomic_file")
+  ) %>%
+  mutate(sample1 = ifelse(is.na(sample1), genome1, sample1)) %>%
+  mutate(sample2 = ifelse(is.na(sample2), genome2, sample2)) %>%
+  ggplot(aes(x = factor(sample1, levels = ordered_names), y = factor(sample2, levels = ordered_names), fill = ani)) + 
+    geom_tile() +
+    scale_fill_distiller(palette = "PRGn", direction = 1) +
+    theme_cowplot(12) +
+    labs(x= "", y = "") + 
+    background_grid() +
+  theme(axis.text.x = element_blank())
+
+sup_fig3_margins <- ggdraw(sup_fig3) + 
+  theme(
+    plot.margin = margin(t = 1, r = 1, b = 5, l = 1, unit = "in")
+  )
+
+save_plot(
+  filename = "sup_fig3.svg", 
+  plot = sup_fig3_margins,
+  base_width = 8.5,
+  base_height = 11
+)
+
+```
